@@ -65,7 +65,7 @@ class Board
 #    board.players.each do |player|
     players.each do |player|
 #      rows = player == board.players[0] ? (0..1) : (6..7)
-      rows = player == players[0] ? [ 0,1 ] : [ 6,7 ]
+      rows = player == players[0] ? [ 0,1,2 ] : [ 5,6,7 ]
       piece_count = 0
       col = 0
     player.pieces.each do |piece|
@@ -75,11 +75,18 @@ class Board
 
 
 
-        rows.shift if piece_count == 4
-        col = 0 if piece_count == 4
-        piece.position = [rows[0], col]
-        board[[rows[0], col]] = piece
-        col += 1
+        rows.shift if piece_count % 4 == 0 and piece_count != 0
+        # col_start = piece_count % 4 == 1 ? 0 : 1
+        col_start = rows[0] % 2 == 1 ? 0 : 1
+        col = 0 if (col_start == 0 || col_start == 1) && piece_count % 4 == 0
+
+        # piece.position = [rows[0], col + col_start]
+   #      board[[rows[0], col + col_start]] = piece
+
+     piece.position = [col + col_start, rows[0]]
+     board[[col + col_start, rows[0]]] = piece
+
+        col += 2
         piece_count += 1
           # end
  #        end
