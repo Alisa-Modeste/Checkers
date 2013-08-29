@@ -10,31 +10,22 @@ class Piece
   end
 
   def can_move?(dest)
+    p position
     cur_x, cur_y = position
-    # dest_x, dest_y = dest
 
-    MOVES.each |distance|
+    MOVES.each do |distance|
       dist_x, dist_y = distance
-      #if (cur_x + dist_x) == dest_x && (cur_y + dist_y) == dest_y
-       if [cur_x + dist_x, cur_y + dist_y] == dest
+      if [cur_x + dist_x, cur_y + dist_y] == dest
         return true
       end
     end
 
-    #opponent_piece(dest)
-
 
   end
 
-  # def opponent_piece?(dest)
-  #   cur_x, cur_y = position
-  #   dest_x, dest_y = dest
-  #
-  #
-  # end
 
   def can_slide?(dest)
-    MOVES.each |distance|
+    MOVES.each do |distance|
       dist_x, dist_y = distance
 
       if [cur_x + dist_x, cur_y + dist_y] == dest
@@ -51,26 +42,24 @@ class Piece
     vector_y = cur_y - mid_y
 
     [mid_x + vector_x, mid_y + vector_y] == dest
-    #if [mid_x + vector_x, mid_y + vector_y] == dest
-      # true
- #     end
- #
- #    false
+
   end
 
   def can_jump?(board, dest)
     cur_x, cur_y = position
 
-    MOVES.each |distance|
+    MOVES.each do |distance|
       dist_x, dist_y = distance
       #board opponent piece; is there an opponent piece there?
       midway = [cur_x + dist_x, cur_y + dist_y]
-      unless board[midway].nil? # == opponent piece
+      unless board[midway].nil?
         return true if one_over?(midway, dest)
       end
     end
 
   end
+
+
 
 end
 
@@ -141,17 +130,42 @@ class Board
 
   end
 
+  def perform_slide(dest)
+    #players[0].pieces[11].perform_slide([6,3])
+    piece = players[0].pieces[11]
+    start_pos = piece.position
+
+    piece.position = dest
+    board[start_pos] = nil
+    board[dest] = piece
+  end
+
 end
 
 
 class CheckersGame
   attr_reader :players
-  attr_accessor :board #, :players
+  attr_accessor :board
 
   def initialize
     @players = [ Player.new, Player.new ]
     @board = Board.new(players)
   end
 
+  def input
+    #get checker position and destination
+  end
+
+
+
+  def play
+    while true
+      if players[i].piece.can_slide?(dest)
+        players[i].piece.perform_slide(dest)
+      elsif players[i].piece.can_jump?(dest)
+        players[i].piece.perform_jump(dest)
+      end
+    end
+  end
 
 end
