@@ -24,14 +24,16 @@ class Piece
   end
 
 
-  def can_slide?(dest)
+  def can_slide?(board, dest)
     MOVES.each do |distance|
       dist_x, dist_y = distance
 
-      if [cur_x + dist_x, cur_y + dist_y] == dest
+      if [cur_x + dist_x, cur_y + dist_y] == dest && board[dest].nil?
         return true
       end
     end
+
+    false
   end
 
   def one_over?(midway, dest)
@@ -43,6 +45,10 @@ class Piece
 
     [mid_x + vector_x, mid_y + vector_y] == dest
 
+    # result = [mid_x + vector_x, mid_y + vector_y] == dest
+#
+#     [ result, [ vector_x, vector_y ]]
+
   end
 
   def can_jump?(board, dest)
@@ -52,7 +58,7 @@ class Piece
       dist_x, dist_y = distance
       #board opponent piece; is there an opponent piece there?
       midway = [cur_x + dist_x, cur_y + dist_y]
-      unless board[midway].nil?
+      unless board[midway].nil? or board[midway].player == player
         return true if one_over?(midway, dest)
       end
     end
@@ -74,6 +80,7 @@ class Player
   attr_accessor :pieces
   def initialize
     @pieces = []
+    captured_pieces = 0
 
     create_pieces
   end
@@ -130,14 +137,26 @@ class Board
 
   end
 
-  def perform_slide(dest)
+  def perform_slide(piece, dest)
     #players[0].pieces[11].perform_slide([6,3])
-    piece = players[0].pieces[11]
+    #piece = player.pieces[11]
     start_pos = piece.position
 
     piece.position = dest
     board[start_pos] = nil
     board[dest] = piece
+  end
+
+  def capture_piece(piece)
+    board[piece.position] = nil
+    piece.player.pieces.delete(piece)
+
+    board.players[i-1].captured_pieces += 1
+  end
+
+  def perform_jump(piece, opp_piece, dest)
+    capture_piece(opp_piece)
+    perform_slide(piece, dest)
   end
 
 end
@@ -154,6 +173,26 @@ class CheckersGame
 
   def input
     #get checker position and destination
+
+    #check board for starting point
+    #make sure it's their piece
+    #send the player's piece
+
+    unless defined?(board[start].position) and
+      board[start].player == players[i]
+
+      raise "Invalid move"
+    end
+
+    piece = board[start]
+
+
+    if piece.can_slide?(board, dest)
+      board.perform_slide(piece, dest)
+
+    elsif piece.can_jump?(board, dest)
+      board.perform_jump(piece, dest)
+    end
   end
 
 
