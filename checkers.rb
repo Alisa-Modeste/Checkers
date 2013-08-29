@@ -1,35 +1,42 @@
 class Piece
   attr_accessor :player, :position
 
-  MOVES = [[-1, 1], [1, 1]]
-  JUMPS = [[-2, 2], [2, 2]]
+  P1_MOVES = [[-1, 1], [1, 1]]
+  P2_MOVES = [[-1, -1], [1, -1]]
+  P1_JUMPS = [[-2, 2], [2, 2]]
+  P2_JUMPS = [[-2, -2], [2, -2]]
 
   def initialize(player)
     @player = player
     @position = nil
   end
 
-  def can_move?(dest)
-    p position
-    cur_x, cur_y = position
-
-    MOVES.each do |distance|
-      dist_x, dist_y = distance
-      if [cur_x + dist_x, cur_y + dist_y] == dest
-        return true
-      end
-    end
-
-
-  end
+  # def can_move?(dest)
+  #   p position
+  #   cur_x, cur_y = position
+  #
+  #   my_moves = player.num == 1 ? P1_MOVES : P2_MOVES
+  #   my_moves.each do |distance|
+  #     dist_x, dist_y = distance
+  #     if [cur_x + dist_x, cur_y + dist_y] == dest
+  #       return true
+  #     end
+  #   end
+  #
+  #
+  # end
 
 
   def can_slide?(board, dest)
     cur_x, cur_y = position
 
-    MOVES.each do |distance|
+    my_moves = player.num == 1 ? P1_MOVES : P2_MOVES
+    my_moves.each do |distance|
       dist_x, dist_y = distance
 
+      p "[cur_x + dist_x, cur_y + dist_y] #{[cur_x + dist_x, cur_y + dist_y]}"
+      p "dest #{dest}"
+      p "board.squares[dest] #{board.squares[dest]}"
       if [cur_x + dist_x, cur_y + dist_y] == dest && board.squares[dest].nil?
         return true
       end
@@ -56,17 +63,45 @@ class Piece
   def can_jump?(board, dest)
     cur_x, cur_y = position
 
-    MOVES.each do |distance|
+    my_moves = player.num == 1 ? P1_MOVES : P2_MOVES
+    my_moves.each do |distance|
       dist_x, dist_y = distance
       #board opponent piece; is there an opponent piece there?
       midway = [cur_x + dist_x, cur_y + dist_y]
-      unless board[midway].nil? or squares[midway].player == player
+      unless board.squares[midway].nil? or board.squares[midway].player == player
         return true if one_over?(midway, dest)
       end
     end
 
   end
 
+  def perform_slide(board, dest)
+    #players[0].pieces[11].perform_slide([6,3])
+    #piece = player.pieces[11]
+    start_pos = position
+
+    position = dest
+    board.squares[start_pos] = nil
+    board.squares[dest] = self
+  end
+
+  def capture_piece(board, opp_piece)
+    #got here even though the jump was all wrong - 4,5 5,2
+    board.squares[opp_piece.position] = nil
+    opp_piece.player.pieces.delete(self)
+
+    #other_player = board.squares.players.index(player) - 1
+    #board.squares.players[other_player].captured_pieces += 1
+  end
+
+  def perform_jump(board, dest)
+    end_point = position
+    midway = [ (end_point[0] + dest[0]) / 2, (end_point[1] + dest[1]) / 2 ]
+    opp_piece = board.squares[midway]
+
+    capture_piece(board, opp_piece)
+    perform_slide(self, dest)
+  end
 
 
 end
@@ -79,9 +114,11 @@ class King < Piece
 end
 
 class Player
-  attr_accessor :pieces
-  def initialize
+
+  attr_accessor :pieces, :num
+  def initialize(num)
     @pieces = []
+    @num = num
     captured_pieces = 0
 
     create_pieces
@@ -139,31 +176,7 @@ class Board
 
   end
 
-  def perform_slide(piece, dest)
-    #players[0].pieces[11].perform_slide([6,3])
-    #piece = player.pieces[11]
-    start_pos = piece.position
 
-    piece.position = dest
-    squares[start_pos] = nil
-    squares[dest] = piece
-  end
-
-  def capture_piece(piece)
-    squares[piece.position] = nil
-    piece.player.pieces.delete(piece)
-
-    squares.players[i-1].captured_pieces += 1
-  end
-
-  def perform_jump(piece, dest)
-    other_end_p = piece.position
-    midway = [ (other_end_p[0] + dest[0]) / 2, (other_end_p[1] + dest[1]) / 2 ]
-    opp_piece = squares[midway]
-
-    capture_piece(opp_piece)
-    perform_slide(piece, dest)
-  end
 
   def render_board
     (0..7).to_a.reverse.each do |x|
@@ -181,15 +194,17 @@ end
 
 class CheckersGame
   attr_reader :players
-  attr_accessor :board
+  attr_accessor :board, :turn
 
   def initialize
-    @players = [ Player.new, Player.new ]
+    @players = [ Player.new(1), Player.new(2) ]
     @board = Board.new(players)
+    @turn = 0
   end
 
   def input
-    i = 0
+
+
     #get checker position and destination
 
     #check board for starting point
@@ -207,40 +222,66 @@ class CheckersGame
     p "board[start] is #{board.squares[start]}"
     p defined?(board.squares[start].position)
 
+    p "board.squares[start].player #{board.squares[start].player} players[turn] #{players[turn]}"
+    p "players[turn-1] #{players[turn-1]}"
+    p "turn is #{turn}"
+
     unless defined?(board.squares[start].position) and
-      board.squares[start].player == players[i]
+      board.squares[start].player == players[turn]
 
       raise InvalidMoveError.new "Invalid move"
+      # puts "Invalid"
+#       return false
     end
 
     piece = board.squares[start]
-
+    p "piece is #{piece}"
 
     if piece.can_slide?(board, dest)
-      board.perform_slide(piece, dest)
+      p "Yep. I can slide"
+      piece.perform_slide(board, dest)
 
     elsif piece.can_jump?(board, dest)
-      board.perform_jump(piece, dest)
+      p "Yep. I can jump"
+      piece.perform_jump(board, dest)
     else
-      raise InvalidMoveError.new "Invalid move"
+    #  raise InvalidMoveError.new "Invalid move"
     end
 
-  rescue InvalidMoveError => e
-    puts "Problem: #{e}"
-    retry
+  # rescue InvalidMoveError => e
+ #    puts "Problem: #{e}"
+ #    retry
+
+   #turn = turn == 1 ? 0 : 1
+   # if self.turn == 0
+#      puts "I changed myself"
+#      self.turn = 1
+#      puts "Self turn is #{self.turn}"
+#    else
+#      puts "I'm in the other one"
+#      self.turn = 0
+#    def end
+
+  self.turn = self.turn == 0 ? 1 : 0
+
+
 
   end
 
 
 
-  def play
-    while true
-      if players[i].piece.can_slide?(dest)
-        players[i].piece.perform_slide(dest)
-      elsif players[i].piece.can_jump?(dest)
-        players[i].piece.perform_jump(dest)
-      end
-    end
-  end
+  # def play
+ #    while true
+ #      if players[turn].piece.can_slide?(dest)
+ #        players[turn].piece.perform_slide(dest)
+ #      elsif players[turn].piece.can_jump?(dest)
+ #        players[turn].piece.perform_jump(dest)
+ #      end
+ #
+ #      turn == 0 ? 1 : 0
+ #    end
+ #  end
+
+  #def play
 
 end
