@@ -1,8 +1,55 @@
 class CheckersGame
-  game = Board.new
+  players = [ Player.new, Player.new ]
+  game = Board.new(players)
+
+
+
+end
+
+class Board
+  def initialize(players)
+    @board = Hash.new
+    @players = players
+
+    (0..7).each do |row|
+      (0..7).each do |col|
+        board[[row,col]] = nil
+      end
+    end
+  end
+
+  def which_piece(pos)
+
+    #return player and type
+  end
 
   def populate_board
-    game.board #the four rows get updated
+
+    #the four rows get updated
+    board.players.each do |player|
+      rows = player == board.players[0] ? (0..1) : (6..7)
+      rows.each do |row|
+        (0..7).each do |col|
+
+      player.pieces.each do |piece|
+        piece.position = [row, col]
+        board[row, col] = piece
+      end
+    end
+
+  end
+
+end
+
+class Player
+  def initialize
+    @pieces = []
+
+    create_pieces
+  end
+
+  def create_pieces
+    12.times { pieces << Piece.new(self) }
   end
 end
 
@@ -29,30 +76,4 @@ class King < Piece
       [-1, -1], [1, -1]]
   KING_JUMPS = [[-2, 2], [2, 2],
       [-2, -2], [2, -2]]
-end
-
-class Board
-  def initialize
-    @board = Hash.new
-
-    (0..7).each do |row|
-      (0..7).each do |col|
-        board[[row,col]] = nil
-      end
-    end
-  end
-
-  def which_piece(pos)
-
-    #return player and type
-  end
-
-
-end
-
-class Player
-  def initialize
-    @pieces = []
-
-  end
 end
