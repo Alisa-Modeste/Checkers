@@ -154,9 +154,58 @@ class Board
     board.players[i-1].captured_pieces += 1
   end
 
-  def perform_jump(piece, opp_piece, dest)
+  def perform_jump(piece, dest)
+    other_end_p = piece.position
+    midway = [ (other_end_p[0] + dest[0]) / 2, (other_end_p[1] + dest[1]) / 2 ]
+    opp_piece = board[midway]
+
     capture_piece(opp_piece)
     perform_slide(piece, dest)
+  end
+
+  def render_board
+    (0..7).each do |x|
+      (0..7).each do |y|
+        print board[[x, y]].nil? ? "   |" : " X |"
+        #print "x,y is #{board[[x, y]].nil?}"
+      end
+      puts ''
+    end
+    puts "second attempt"
+    (0..7).each do |x|
+      (0..7).each do |y|
+        print board[[y, x]].nil? ? "   |" : " X |"
+
+      end
+      puts ''
+    end
+
+      puts "third attempt"
+      (0..7).to_a.reverse.each do |x|
+        (0..7).to_a.reverse.each do |y|
+          print board[[y, x]].nil? ? "   |" : " #{y},#{x} |"
+
+        end
+      puts ''
+    end
+
+    puts "fourth attempt"
+    (0..7).each do |x|
+      (0..7).each do |y|
+        print board[[y, x]].nil? ? "   |" : " #{y},#{x} |"
+
+      end
+    puts ''
+  end
+
+  puts "fifth attempt"
+  (0..7).to_a.reverse.each do |x|
+    (0..7).each do |y|
+      print board[[y, x]].nil? ? "   |" : " #{y},#{x} |"
+
+    end
+  puts ''
+end
   end
 
 end
