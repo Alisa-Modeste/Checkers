@@ -25,10 +25,12 @@ class Piece
 
 
   def can_slide?(board, dest)
+    cur_x, cur_y = position
+
     MOVES.each do |distance|
       dist_x, dist_y = distance
 
-      if [cur_x + dist_x, cur_y + dist_y] == dest && board[dest].nil?
+      if [cur_x + dist_x, cur_y + dist_y] == dest && board.squares[dest].nil?
         return true
       end
     end
@@ -58,7 +60,7 @@ class Piece
       dist_x, dist_y = distance
       #board opponent piece; is there an opponent piece there?
       midway = [cur_x + dist_x, cur_y + dist_y]
-      unless board[midway].nil? or board[midway].player == player
+      unless board[midway].nil? or squares[midway].player == player
         return true if one_over?(midway, dest)
       end
     end
@@ -94,15 +96,15 @@ end
 
 class Board
   attr_accessor :players
-  attr_reader :board
+  attr_reader :squares
 
   def initialize(players)
-    @board = Hash.new
+    @squares = Hash.new
     @players = players
 
     (0..7).each do |row|
       (0..7).each do |col|
-        board[[row,col]] = nil
+        squares[[row,col]] = nil
       end
     end
   end
@@ -126,7 +128,7 @@ class Board
         col = 0 if (col_start == 0 || col_start == 1) && piece_count % 4 == 0
 
      piece.position = [col + col_start, rows[0]]
-     board[[col + col_start, rows[0]]] = piece
+     squares[[col + col_start, rows[0]]] = piece
 
         col += 2
         piece_count += 1
@@ -143,69 +145,35 @@ class Board
     start_pos = piece.position
 
     piece.position = dest
-    board[start_pos] = nil
-    board[dest] = piece
+    squares[start_pos] = nil
+    squares[dest] = piece
   end
 
   def capture_piece(piece)
-    board[piece.position] = nil
+    squares[piece.position] = nil
     piece.player.pieces.delete(piece)
 
-    board.players[i-1].captured_pieces += 1
+    squares.players[i-1].captured_pieces += 1
   end
 
   def perform_jump(piece, dest)
     other_end_p = piece.position
     midway = [ (other_end_p[0] + dest[0]) / 2, (other_end_p[1] + dest[1]) / 2 ]
-    opp_piece = board[midway]
+    opp_piece = squares[midway]
 
     capture_piece(opp_piece)
     perform_slide(piece, dest)
   end
 
   def render_board
-    (0..7).each do |x|
+    (0..7).to_a.reverse.each do |x|
       (0..7).each do |y|
-        print board[[x, y]].nil? ? "   |" : " X |"
-        #print "x,y is #{board[[x, y]].nil?}"
-      end
-      puts ''
-    end
-    puts "second attempt"
-    (0..7).each do |x|
-      (0..7).each do |y|
-        print board[[y, x]].nil? ? "   |" : " X |"
-
+        print squares[[y, x]].nil? ? "   |" : " X |"
       end
       puts ''
     end
 
-      puts "third attempt"
-      (0..7).to_a.reverse.each do |x|
-        (0..7).to_a.reverse.each do |y|
-          print board[[y, x]].nil? ? "   |" : " #{y},#{x} |"
-
-        end
-      puts ''
-    end
-
-    puts "fourth attempt"
-    (0..7).each do |x|
-      (0..7).each do |y|
-        print board[[y, x]].nil? ? "   |" : " #{y},#{x} |"
-
-      end
-    puts ''
-  end
-
-  puts "fifth attempt"
-  (0..7).to_a.reverse.each do |x|
-    (0..7).each do |y|
-      print board[[y, x]].nil? ? "   |" : " #{y},#{x} |"
-
-    end
-  puts ''
-end
+    nil
   end
 
 end
@@ -221,19 +189,31 @@ class CheckersGame
   end
 
   def input
+    i = 0
     #get checker position and destination
 
     #check board for starting point
     #make sure it's their piece
     #send the player's piece
 
-    unless defined?(board[start].position) and
-      board[start].player == players[i]
+    #[7,2] [6,3]
+    # 7,2 6,3
+    coordinates = gets.chomp.split(" ")
+    coordinates[0] = coordinates[0].split(',').map{|x| x.to_i}
+    coordinates[1] = coordinates[1].split(',').map{|x| x.to_i}
+    p coordinates
+    start, dest = coordinates
 
-      raise "Invalid move"
+    p "board[start] is #{board.squares[start]}"
+    p defined?(board.squares[start].position)
+
+    unless defined?(board.squares[start].position) and
+      board.squares[start].player == players[i]
+
+      raise InvalidMoveError.new "Invalid move"
     end
 
-    piece = board[start]
+    piece = board.squares[start]
 
 
     if piece.can_slide?(board, dest)
@@ -241,7 +221,14 @@ class CheckersGame
 
     elsif piece.can_jump?(board, dest)
       board.perform_jump(piece, dest)
+    else
+      raise InvalidMoveError.new "Invalid move"
     end
+
+  rescue InvalidMoveError => e
+    puts "Problem: #{e}"
+    retry
+
   end
 
 
