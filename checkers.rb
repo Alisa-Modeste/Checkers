@@ -1,3 +1,5 @@
+require "colorize"
+
 class Piece
   attr_accessor :player, :position
 
@@ -9,6 +11,7 @@ class Piece
   def initialize(player)
     @player = player
     @position = nil
+    @type = :pawn
   end
 
 
@@ -16,6 +19,7 @@ class Piece
     cur_x, cur_y = position
 
     my_moves = player.num == 1 ? P1_MOVES : P2_MOVES
+    my_moves = P1_MOVES + P2_MOVES if self.type == :king
     my_moves.each do |distance|
       dist_x, dist_y = distance
 
@@ -42,6 +46,7 @@ class Piece
     cur_x, cur_y = position
 
     my_jumps = player.num == 1 ? P1_JUMPS : P2_JUMPS
+    my_jumps = P1_JUMPS + P2_JUMPS if self.type == :king
     my_jumps.each do |distance|
       dist_x, dist_y = distance
       #board opponent piece; is there an opponent piece there?
@@ -66,7 +71,7 @@ class Piece
     #got here even though the jump was all wrong - 4,5 5,2
     board.squares[opp_piece.position] = nil
     opp_piece.player.pieces.delete(self)
-
+	#self.player.captured_pieces += 1
   end
 
   def perform_jump(board, dest)
@@ -79,15 +84,17 @@ class Piece
     perform_slide(board, dest)
   end
 
+  def perform_moves!(move_sequence)
+  end
 
 end
 
-class King < Piece
-  KING_MOVES = [[-1, 1], [1, 1],
-      [-1, -1], [1, -1]]
-  KING_JUMPS = [[-2, 2], [2, 2],
-      [-2, -2], [2, -2]]
-end
+# class King < Piece
+#   KING_MOVES = [[-1, 1], [1, 1],
+#       [-1, -1], [1, -1]]
+#   KING_JUMPS = [[-2, 2], [2, 2],
+#       [-2, -2], [2, -2]]
+# end
 
 class Player
 
@@ -101,7 +108,7 @@ class Player
   end
 
   def create_pieces
-    12.times { pieces << Piece.new(self) }
+    12.times { self.pieces << Piece.new(self) }
   end
 end
 
@@ -122,10 +129,10 @@ class Board
     end
   end
 
-  def which_piece(pos)
-
-    #return player and type
-  end
+  # def which_piece(pos)
+ #
+ #    #return player and type
+ #  end
 
   def populate_board
     #the six rows get updated
@@ -133,15 +140,16 @@ class Board
       rows = player == players[0] ? [ 0,1,2 ] : [ 5,6,7 ]
       piece_count = 0
       col = 0
-    player.pieces.each do |piece|
+
+      player.pieces.each do |piece|
 
         rows.shift if piece_count % 4 == 0 and piece_count != 0
 
         col_start = rows[0] % 2 == 1 ? 0 : 1
         col = 0 if (col_start == 0 || col_start == 1) && piece_count % 4 == 0
 
-     piece.position = [col + col_start, rows[0]]
-     squares[[col + col_start, rows[0]]] = piece
+        piece.position = [col + col_start, rows[0]]
+        squares[[col + col_start, rows[0]]] = piece
 
         col += 2
         piece_count += 1
@@ -157,7 +165,8 @@ class Board
   def render_board
     (0..7).to_a.reverse.each do |x|
       (0..7).each do |y|
-        print squares[[y, x]].nil? ? "   |" : " X |"
+        print squares[[y, x]].nil? ? "   " : ( squares[[y, x]].player.num == 1 ? " X ".colorize( :red ) : " X ".colorize( :blue ))
+        print "|"
       end
       puts ''
     end
@@ -192,13 +201,13 @@ class CheckersGame
     coordinates = gets.chomp.split(" ")
     coordinates[0] = coordinates[0].split(',').map{|x| x.to_i}
     coordinates[1] = coordinates[1].split(',').map{|x| x.to_i}
-    p coordinates
+    # p coordinates
     start, dest = coordinates
 
-    unless defined?(board.squares[start].position) and
+     unless defined?(board.squares[start].position) &&
       board.squares[start].player == players[turn]
 
-      raise InvalidMoveError.new "Invalid move"
+      raise InvalidMoveError.new "Invalid move - line 201"
       # puts "Invalid"
 #       return false
     end
@@ -211,16 +220,15 @@ class CheckersGame
     elsif piece.can_jump?(board, dest)
       piece.perform_jump(board, dest)
     else
-    #  raise InvalidMoveError.new "Invalid move"
+      raise InvalidMoveError.new "Invalid move  - line 214"
     end
-
-  # rescue InvalidMoveError => e
- #    puts "Problem: #{e}"
- #    retry
 
 
   self.turn = self.turn == 0 ? 1 : 0
 
+    rescue InvalidMoveError => e
+      puts "Problem: #{e}"
+      retry
 
 
   end
@@ -228,4 +236,10 @@ class CheckersGame
   #def play
   #end
 
+end
+
+class InvalidMoveError < StandardError
+  def initialize(msg = "Invalid")
+      super(msg)
+    end
 end
